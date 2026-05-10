@@ -1,0 +1,54 @@
+# Ingress 1 - regular traffic with rewrite
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: voting-ingress
+  namespace: 3tier-hagen
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: hagen.ironlabs.online
+      http:
+        paths:
+          - path: /vote(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: vote
+                port:
+                  number: 80
+          - path: /result(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: result
+                port:
+                  number: 80
+---
+# Ingress 2 - socket.io without rewrite
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: voting-ingress-ws
+  namespace: 3tier-hagen
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "result"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: hagen.ironlabs.online
+      http:
+        paths:
+          - path: /result/socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: result
+                port:
+                  number: 80

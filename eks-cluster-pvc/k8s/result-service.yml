@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: result
+  namespace: 3tier-hagen
+spec:
+  selector:
+    app: result
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
