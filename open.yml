@@ -1,0 +1,19 @@
+env:
+  - name: PG_HOST # ← change POSTGRES_HOST to PG_HOST
+    value: "postgres"
+  - name: PG_PORT # ← change POSTGRES_PORT to PG_PORT
+    value: "5432"
+  - name: PG_USER # ← change POSTGRES_USER to PG_USER
+    valueFrom:
+      secretKeyRef:
+        name: postgres-secret
+        key: POSTGRES_USER
+  - name: PG_PASSWORD # ← change POSTGRES_PASSWORD to PG_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: postgres-secret
+        key: POSTGRES_PASSWORD
+  - name: PG_DATABASE # ← change POSTGRES_DB to PG_DATABASE
+    value: "postgres"
+
+    et is disabled by the nginx ingress controller. Use the built-in WebSocket annotation instead:
