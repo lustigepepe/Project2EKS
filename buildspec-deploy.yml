@@ -1,0 +1,54 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: "us-east-2"
+    CLUSTER_NAME: "hagen-eks-lab2v1"
+    NAMESPACE: "3tier-hagen"
+
+phases:
+  install:
+    commands:
+      # Install kubectl (replaces runner having it pre-installed)
+      - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - chmod +x kubectl && mv kubectl /usr/local/bin/
+
+  pre_build:
+    commands:
+      # Replaces: aws-actions/configure-aws-credentials (IAM role handles this now)
+      # Replaces: aws eks update-kubeconfig step
+      - aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
+
+  build:
+    commands:
+      # Replaces: kubectl apply step
+      - |
+        kubectl apply -n $NAMESPACE \
+          -f eks-cluster-pvc/k8s/postgres-deployment.yml \
+          -f eks-cluster-pvc/k8s/postgres-service.yml \
+          -f eks-cluster-pvc/k8s/redis-deployment.yml \
+          -f eks-cluster-pvc/k8s/redis-service.yml \
+          -f eks-cluster-pvc/k8s/worker-deployment.yml \
+          -f eks-cluster-pvc/k8s/vote-deployment.yml \
+          -f eks-cluster-pvc/k8s/vote-service.yml \
+          -f eks-cluster-pvc/k8s/result-deployment.yml \
+          -f eks-cluster-pvc/k8s/result-service.yml \
+          -f eks-cluster-pvc/k8s/ingress.yml
+
+      # Replaces: Restart deployments step
+      - kubectl rollout restart deployment vote result worker -n $NAMESPACE
+      - |
+        for app in vote result worker; do
+          kubectl rollout status deployment $app -n $NAMESPACE --timeout=120s || {
+            echo "Rollout failed for $app"
+            kubectl describe deployment $app -n $NAMESPACE
+            exit 1
+          }
+        done
+
+  post_build:
+    commands:
+      # Replaces: Verify pods and services step
+      - kubectl get pods -n $NAMESPACE
+      - kubectl get services -n $NAMESPACE
+      - kubectl get ingress -n $NAMESPACE

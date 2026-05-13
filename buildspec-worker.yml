@@ -1,0 +1,28 @@
+version: 0.2
+
+env:
+  secrets-manager:
+    DOCKER_USERNAME: "cicd/dockerhub:username"
+    DOCKER_PASSWORD: "cicd/dockerhub:password"
+
+phases:
+  install:
+    commands:
+      - docker run --privileged --rm tonistiigi/binfmt --install all
+      - docker buildx create --use --name multiarch-builder
+      - docker buildx inspect --bootstrap
+
+  pre_build:
+    commands:
+      - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+      - IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+  build:
+    commands:
+      - docker buildx build
+        --platform linux/amd64,linux/arm64
+        --push
+        -t $DOCKER_USERNAME/worker-app:$IMAGE_TAG
+        -t $DOCKER_USERNAME/worker-app:multiarch
+        -f ./VoteApp/worker/Dockerfile
+        ./VoteApp/worker
